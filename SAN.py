@@ -4,9 +4,28 @@
  @Author  : Wang Xin
  @Email   : wangxin_buaa@163.com
 """
+import math
+
 import torch
 import torch.nn as nn
 import torchvision
+
+
+def weights_init(m):
+    # Initialize filters with Gaussian random weights
+    if isinstance(m, nn.Conv2d):
+        n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+        m.weight.data.normal_(0, math.sqrt(2. / n))
+        if m.bias is not None:
+            m.bias.data.zero_()
+    elif isinstance(m, nn.ConvTranspose2d):
+        n = m.kernel_size[0] * m.kernel_size[1] * m.in_channels
+        m.weight.data.normal_(0, math.sqrt(2. / n))
+        if m.bias is not None:
+            m.bias.data.zero_()
+    elif isinstance(m, nn.BatchNorm2d):
+        m.weight.data.fill_(1)
+        m.bias.data.zero_()
 
 
 class MeanFieldUpdate(nn.Module):
@@ -121,6 +140,33 @@ class SAN(nn.Module):
         self.pred_2_relu = nn.ReLU(inplace=True)
         self.pred_3 = nn.Conv2d(feat_num // 4, 1, kernel_size=3, stride=1, padding=1)
 
+        # weights init
+        self.res4f_dec_1.apply(weights_init)
+        self.res5c_dec_1.apply(weights_init)
+        self.prediction_3d.apply(weights_init)
+        self.prediction_4f.apply(weights_init)
+        self.prediction_5c.apply(weights_init)
+
+        self.meanFieldUpdate1_1.apply(weights_init)
+        self.meanFieldUpdate1_2.apply(weights_init)
+        self.meanFieldUpdate1_3.apply(weights_init)
+
+        self.meanFieldUpdate2_1.apply(weights_init)
+        self.meanFieldUpdate2_2.apply(weights_init)
+        self.meanFieldUpdate2_3.apply(weights_init)
+
+        self.meanFieldUpdate3_1.apply(weights_init)
+        self.meanFieldUpdate3_2.apply(weights_init)
+        self.meanFieldUpdate3_3.apply(weights_init)
+
+        self.meanFieldUpdate4_1.apply(weights_init)
+        self.meanFieldUpdate4_2.apply(weights_init)
+        self.meanFieldUpdate4_3.apply(weights_init)
+
+        self.meanFieldUpdate5_1.apply(weights_init)
+        self.meanFieldUpdate5_2.apply(weights_init)
+        self.meanFieldUpdate5_3.apply(weights_init)
+
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
@@ -184,7 +230,6 @@ class SAN(nn.Module):
         pred = nn.functional.interpolate(pred, size=(188, 621), mode='bilinear', align_corners=True)
 
         return pred_3d, pred_4f, pred_5c, pred
-
 
 if __name__ == "__main__":
     model = SAN(feat_width=80, feat_height=24)
