@@ -4,8 +4,6 @@
  @Author  : Wang Xin
  @Email   : wangxin_buaa@163.com
 """
-import collections
-
 import torch
 import torch.nn as nn
 import torchvision
@@ -87,9 +85,9 @@ class SAN(nn.Module):
         self.res5c_dec = nn.UpsamplingBilinear2d(size=(feat_height, feat_width))
 
         # add deep supervision for three semantic layers
-        self.prediction_3d = nn.Conv2d(512, out_channels=1, kernel_size=3, stride=1, padding=1)
-        self.prediction_4f = nn.Conv2d(1024, out_channels=1, kernel_size=3, stride=1, padding=1)
-        self.prediction_5c = nn.Conv2d(2048, out_channels=1, kernel_size=3, stride=1, padding=1)
+        self.prediction_3d = nn.Conv2d(feat_num, out_channels=1, kernel_size=3, stride=1, padding=1)
+        self.prediction_4f = nn.Conv2d(feat_num, out_channels=1, kernel_size=3, stride=1, padding=1)
+        self.prediction_5c = nn.Conv2d(feat_num, out_channels=1, kernel_size=3, stride=1, padding=1)
 
         # the first meanfield updating
         self.meanFieldUpdate1_1 = MeanFieldUpdate(feat_num, feat_num, feat_num)
@@ -122,6 +120,7 @@ class SAN(nn.Module):
         self.pred_2 = nn.ConvTranspose2d(feat_num // 2, feat_num // 4, kernel_size=4, stride=2, padding=1)
         self.pred_2_relu = nn.ReLU(inplace=True)
         self.pred_3 = nn.Conv2d(feat_num // 4, 1, kernel_size=3, stride=1, padding=1)
+
 
     def forward(self, x):
         x = self.conv1(x)
@@ -178,4 +177,27 @@ class SAN(nn.Module):
         pred = self.pred_2(pred)
         pred = self.pred_2_relu(pred)
         pred = self.pred_3(pred)
-        return x
+
+        # UpSample to output size
+        pred_3d = nn.functional.interpolate(pred_3d, size = (188, 621), mode = 'bilinear', align_corners = True)
+        pred_4f = nn.functional.interpolate(pred_3d, size = (188, 621), mode = 'bilinear', align_corners = True)
+        pred_5c = nn.functional.interpolate(pred_3d, size = (188, 621), mode = 'bilinear', align_corners = True)
+        pred = nn.functional.interpolate(pred_3d, size = (188, 621), mode = 'bilinear', align_corners = True)
+
+        return pred_3d, pred_4f, pred_5c, pred
+
+
+if __name__ == "__main__":
+    model = SAN(feat_width=80, feat_height=24)
+    model = model.cuda()
+    model.eval()
+    image = torch.randn(1, 3, 188, 621)
+    image = image.cuda()
+
+    with torch.no_grad():
+        pred_3d, pred_4f, pred_5c, pred = model(image)
+
+    print(pred_3d.size())
+    print(pred_4f.size())
+    print(pred_5c.size())
+    print(pred.size())
