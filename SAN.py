@@ -121,7 +121,6 @@ class SAN(nn.Module):
         self.pred_2_relu = nn.ReLU(inplace=True)
         self.pred_3 = nn.Conv2d(feat_num // 4, 1, kernel_size=3, stride=1, padding=1)
 
-
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
@@ -179,10 +178,10 @@ class SAN(nn.Module):
         pred = self.pred_3(pred)
 
         # UpSample to output size
-        pred_3d = nn.functional.interpolate(pred_3d, size = (188, 621), mode = 'bilinear', align_corners = True)
-        pred_4f = nn.functional.interpolate(pred_3d, size = (188, 621), mode = 'bilinear', align_corners = True)
-        pred_5c = nn.functional.interpolate(pred_3d, size = (188, 621), mode = 'bilinear', align_corners = True)
-        pred = nn.functional.interpolate(pred_3d, size = (188, 621), mode = 'bilinear', align_corners = True)
+        pred_3d = nn.functional.interpolate(pred_3d, size=(188, 621), mode='bilinear', align_corners=True)
+        pred_4f = nn.functional.interpolate(pred_4f, size=(188, 621), mode='bilinear', align_corners=True)
+        pred_5c = nn.functional.interpolate(pred_5c, size=(188, 621), mode='bilinear', align_corners=True)
+        pred = nn.functional.interpolate(pred, size=(188, 621), mode='bilinear', align_corners=True)
 
         return pred_3d, pred_4f, pred_5c, pred
 
